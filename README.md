@@ -135,3 +135,4 @@ List of folders to "share" between release. A symlink will be created for each i
 Keys = Folder to share (relative to `sharedFolder`)
 
 Values = Symlink path  (relative to release folder)
+
