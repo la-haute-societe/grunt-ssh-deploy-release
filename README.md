@@ -136,3 +136,8 @@ Keys = Folder to share (relative to `sharedFolder`)
 
 Values = Symlink path  (relative to release folder)
 
+
+
+## Todo
+ - Synchro with rsync (diff)
+ - 
