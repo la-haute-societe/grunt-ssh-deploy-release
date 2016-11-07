@@ -24,24 +24,24 @@ module.exports = function (grunt) {
             password: '',
             deployPath: '',
             readyTimeout: 20000,
-            
+
             // Folders / link
             currentReleaseLink: 'www',
             sharedFolder: 'shared',
             releasesFolder: 'releases',
-            localPath: 'www'
-            
+            localPath: 'www',
+
             // Release
             archiveName: 'release.zip',
             releasesToKeep: '3',
             tag: timestamp,
-            
+
             // Excluded files
             exclude: [],
-            
+
             // Folders to share
             share: {},
-            
+
             // Callback
             onBeforeDeploy: function (deployer, callback) {
                 callback();
