@@ -240,10 +240,9 @@ module.exports = function (grunt) {
 		 */
 		function createSymboliclink(target, link, callback) {
 			var command = [
-				'mkdir -p ' + releasePath + '/' + target,
-				'mkdir -p ' + link,
-				'rm -rf ' + link,
 				'cd ' + releasePath,
+				'mkdir -p ' + releasePath + '/' + target, // Create the symlink target
+				'mkdir -p `dirname ' + link + '`', // Create the parent of the symlink target
 				'ln -nfs ' + target + ' ' + link
 			].join(' && ');
 
@@ -263,7 +262,6 @@ module.exports = function (grunt) {
 			var upwardPath = downwardPath.replace(/([^\/]+)/g, '..');
 			return upwardPath;
 		}
-
 
 
 		// TASKS ==========================================
@@ -437,7 +435,7 @@ module.exports = function (grunt) {
 		 */
 		function createFolderTask(callback) {
 
-			if(!options.create || options.create.length == 0) {
+			if (!options.create || options.create.length == 0) {
 				callback();
 				return;
 			}
@@ -462,7 +460,7 @@ module.exports = function (grunt) {
 		 * @param callback
 		 */
 		function makeDirectoriesWriteableTask(callback) {
-			if(!options.makeWriteable || options.makeWriteable.length == 0) {
+			if (!options.makeWriteable || options.makeWriteable.length == 0) {
 				callback();
 				return;
 			}
