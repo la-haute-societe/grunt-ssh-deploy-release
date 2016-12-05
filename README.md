@@ -90,6 +90,8 @@ Password used to connect to remote server.
 
 #### deployPath
 Absolute path on remote server where release will be deployed.
+Do not specify *currentReleaseLink* (or www folder) in this path.
+
 
 #### readyTimeout
 SCP connection timeout duration.
