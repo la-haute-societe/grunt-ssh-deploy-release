@@ -240,12 +240,13 @@ module.exports = function (grunt) {
 		 */
 		function createSymboliclink(target, link, callback) {
 			var command = [
-				'cd ' + releasePath,
-				'mkdir -p ' + releasePath + '/' + target, // Create the symlink target
 				'mkdir -p `dirname ' + link + '`', // Create the parent of the symlink target
+				'rm -rf ' + link,
+				'mkdir -p ' + realpath(link + '/../' + target), // Create the symlink target
+				'cd ' + releasePath,
 				'ln -nfs ' + target + ' ' + link
 			].join(' && ');
-
+			console.log(command);
 			execRemote(command, options.debug, function () {
 				grunt.log.ok('Done');
 				callback();
@@ -261,6 +262,43 @@ module.exports = function (grunt) {
 		function getReversePath(downwardPath) {
 			var upwardPath = downwardPath.replace(/([^\/]+)/g, '..');
 			return upwardPath;
+		}
+
+		/**
+		 * Realpath
+		 * @param path
+		 * @returns {string}
+		 */
+		function realpath (path) {
+			var arr = [] // Save the root, if not given
+
+			// Explode the given path into it's parts
+			arr = path.split('/') // The path is an array now
+			path = [] // Foreach part make a check
+			for (var k in arr) { // This is'nt really interesting
+				if (arr[k] === '.') {
+					continue
+				}
+				// This reduces the realpath
+				if (arr[k] === '..') {
+					/* But only if there more than 3 parts in the path-array.
+					 * The first three parts are for the uri */
+					if (path.length > 3) {
+						path.pop()
+					}
+				} else {
+					// This adds parts to the realpath
+					// But only if the part is not empty or the uri
+					// (the first three parts ar needed) was not
+					// saved
+					if ((path.length < 2) || (arr[k] !== '')) {
+						path.push(arr[k])
+					}
+				}
+			}
+
+			// Returns the absloute path as a string
+			return path.join('/')
 		}
 
 
