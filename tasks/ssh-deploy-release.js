@@ -246,7 +246,7 @@ module.exports = function (grunt) {
 				'cd ' + releasePath,
 				'ln -nfs ' + target + ' ' + link
 			].join(' && ');
-			console.log(command);
+
 			execRemote(command, options.debug, function () {
 				grunt.log.ok('Done');
 				callback();
