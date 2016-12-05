@@ -36,7 +36,19 @@ grunt.config.set('ssh-deploy-release', {
         // Example : 'sharedFolder' : 'linkName'
         share: {
             'images': 'assets/images',
-        }
+        },
+        
+        // Create folder + make writeable
+        create: [
+        	'tmp',
+        	'logs'
+        ],
+        
+        // Make writeable folders
+        makeWriteable: [
+        	'test',
+        	'foo'
+        ]
     },
 
 
@@ -138,8 +150,15 @@ Keys = Folder to share (relative to `sharedFolder`)
 
 Values = Symlink path  (relative to release folder)
 
+#### create
+List of folders to create on remote server.
+
+
+#### makeWriteable
+List of folders to make writeable on remote server. (chmod ugo+w)
+
+
 
 
 ## Todo
  - Synchro with rsync (diff)
- - 

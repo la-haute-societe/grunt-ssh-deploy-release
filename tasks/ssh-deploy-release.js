@@ -42,6 +42,12 @@ module.exports = function (grunt) {
 			// Folders to share
 			share: {},
 
+			// Directories to create
+			create: [],
+
+			// Directories to make writeable
+			makeWriteable: [],
+
 			// Callback
 			onBeforeDeploy: function (deployer, callback) {
 				callback();
@@ -83,6 +89,8 @@ module.exports = function (grunt) {
 				decompressArchiveOnRemoteTask,
 				onBeforeLinkTask,
 				updateSharedSymbolicLinkOnRemoteTask,
+				createFolderTask,
+				makeDirectoriesWriteableTask,
 				updateCurrentSymbolicLinkOnRemoteTask,
 				onAfterDeployTask,
 				remoteCleanupTask,
@@ -245,6 +253,18 @@ module.exports = function (grunt) {
 			});
 		}
 
+		/**
+		 * Return upwardPath from downwardPath
+		 * @example return "../../.." for "path/to/something"
+		 * @param downwardPath
+		 * @returns {XML|string|void|*}
+		 */
+		function getReversePath(downwardPath) {
+			var upwardPath = downwardPath.replace(/([^\/]+)/g, '..');
+			return upwardPath;
+		}
+
+
 
 		// TASKS ==========================================
 
@@ -391,16 +411,6 @@ module.exports = function (grunt) {
 			options.onBeforeLink(deployer, callback);
 		}
 
-		/**
-		 * Return upwardPath from downwardPath
-		 * @example return "../../.." for "path/to/something"
-		 * @param downwardPath
-		 * @returns {XML|string|void|*}
-		 */
-		function getReversePath(downwardPath) {
-			var upwardPath = downwardPath.replace(/([^\/]+)/g, '..');
-			return upwardPath;
-		}
 
 		/**
 		 * Update shared symlink
@@ -417,6 +427,57 @@ module.exports = function (grunt) {
 
 				grunt.log.writeln(' - ' + options.share[currentSharedFolder] + ' ==> ' + currentSharedFolder);
 				createSymboliclink(target, linkPath, callback);
+			}, callback);
+		}
+
+
+		/**
+		 * Create directories
+		 * @param callback
+		 */
+		function createFolderTask(callback) {
+
+			if(!options.create || options.create.length == 0) {
+				callback();
+				return;
+			}
+
+			grunt.log.subhead('Create folders on remote');
+
+			async.eachSeries(options.create, function (currentFolderToCreate, itemCallback) {
+				var path = releasePath + '/' + currentFolderToCreate;
+				var command = 'mkdir ' + path + ' && chmod ugo+w ' + path;
+
+				grunt.log.writeln(' - ' + currentFolderToCreate);
+				execRemote(command, options.debug, function () {
+					grunt.log.ok('Done');
+					itemCallback();
+				});
+			}, callback);
+		}
+
+
+		/**
+		 * Make directories writeable
+		 * @param callback
+		 */
+		function makeDirectoriesWriteableTask(callback) {
+			if(!options.makeWriteable || options.makeWriteable.length == 0) {
+				callback();
+				return;
+			}
+
+			grunt.log.subhead('Make folders writeable on remote');
+
+			async.eachSeries(options.makeWriteable, function (currentFolderToMakeWriteable, itemCallback) {
+				var path = releasePath + '/' + currentFolderToMakeWriteable;
+				var command = 'chmod ugo+w ' + path;
+
+				grunt.log.writeln(' - ' + currentFolderToMakeWriteable);
+				execRemote(command, options.debug, function () {
+					grunt.log.ok('Done');
+					itemCallback();
+				});
 			}, callback);
 		}
 
