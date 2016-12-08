@@ -523,12 +523,12 @@ module.exports = function (grunt) {
 		 * @param callback
 		 */
 		function updateCurrentSymbolicLinkOnRemoteTask(callback) {
-			var deleteSymlink = 'rm -rf ' + getCurrentPath();
-			var setSymlink = 'ln -s ' + releasePath + ' ' + getCurrentPath();
-			var command = deleteSymlink + ' && ' + setSymlink;
 
 			grunt.log.subhead('Update current release symlink on remote');
-			execRemote(command, options.debug, function () {
+
+			var target = options.releasesFolder + '/' +releaseTag;
+
+			createSymboliclink(target, getCurrentPath(), function () {
 				grunt.log.ok('Done');
 				callback();
 			});
