@@ -340,7 +340,6 @@ module.exports = function (grunt) {
 
 			// Execute each command
 			async.eachSeries(commands, (command, innerCallback) => {
-				console.log(command, innerCallback);
 				deployer.execRemote(command, true, innerCallback);
 			}, () => {
 				grunt.log.ok('Done');
