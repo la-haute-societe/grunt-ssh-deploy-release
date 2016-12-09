@@ -58,6 +58,16 @@ module.exports = function (grunt) {
 			onAfterDeploy: function (deployer, callback) {
 				callback();
 			},
+			// Callback commands
+			onBeforeDeployExecute: function (deployer) {
+				return [];
+			},
+			onBeforeLinkExecute: function (deployer) {
+				return [];
+			},
+			onAfterDeployExecute: function (deployer) {
+				return [];
+			},
 		};
 		var task = this;
 		var options = getConfiguration();
@@ -82,17 +92,20 @@ module.exports = function (grunt) {
 
 			async.series([
 				onBeforeDeployTask,
+				onBeforeDeployExecuteTask,
 				compressReleaseTask,
 				connectToRemoteTask,
 				createReleaseFolderOnRemoteTask,
 				uploadReleaseTask,
 				decompressArchiveOnRemoteTask,
 				onBeforeLinkTask,
+				onBeforeLinkExecuteTask,
 				updateSharedSymbolicLinkOnRemoteTask,
 				createFolderTask,
 				makeDirectoriesWriteableTask,
 				updateCurrentSymbolicLinkOnRemoteTask,
 				onAfterDeployTask,
+				onAfterDeployExecuteTask,
 				remoteCleanupTask,
 				deleteLocalArchiveTask,
 				closeConnectionTask
@@ -301,6 +314,40 @@ module.exports = function (grunt) {
 			return path.join('/')
 		}
 
+		/**
+		 * Execute commandsFunction results
+		 * @param commandsFunction function | []
+		 * @param callback
+		 */
+		function businessCallbackExecute(commandsFunction, callback) {
+			if( ! commandsFunction) {
+				callback();
+				return;
+			}
+
+			let commands = commandsFunction;
+
+			// If commandsFunction is a function, take its result as commands
+			if(typeof commandsFunction === 'function'){
+				commands = commandsFunction(deployer);
+			}
+
+			// Nothing to execute
+			if(!commands || commands.length == 0) {
+				callback();
+				return;
+			}
+
+			// Execute each command
+			async.eachSeries(commands, (command, innerCallback) => {
+				console.log(command, innerCallback);
+				deployer.execRemote(command, true, innerCallback);
+			}, () => {
+				grunt.log.ok('Done');
+				callback();
+			});
+		}
+
 
 		// TASKS ==========================================
 
@@ -311,6 +358,15 @@ module.exports = function (grunt) {
 		 */
 		function onBeforeDeployTask(callback) {
 			options.onBeforeDeploy(deployer, callback);
+		}
+
+		/**
+		 * On before create symbolic link Execute
+		 * @param callback
+		 * @returns {*}
+		 */
+		function onBeforeDeployExecuteTask(callback) {
+			businessCallbackExecute(options.onBeforeDeployExecute, callback);
 		}
 
 		/**
@@ -449,6 +505,16 @@ module.exports = function (grunt) {
 
 
 		/**
+		 * On before link Execute
+		 * @param callback
+		 * @returns {*}
+		 */
+		function onBeforeLinkExecuteTask(callback) {
+			businessCallbackExecute(options.onBeforeLinkExecute, callback);
+		}
+
+
+		/**
 		 * Update shared symlink
 		 * @param callback
 		 */
@@ -542,6 +608,17 @@ module.exports = function (grunt) {
 		function onAfterDeployTask(callback) {
 			options.onAfterDeploy(deployer, callback);
 		}
+
+
+		/**
+		 * On after deploy Execute
+		 * @param callback
+		 * @returns {*}
+		 */
+		function onAfterDeployExecuteTask(callback) {
+			businessCallbackExecute(options.onAfterDeployExecute, callback);
+		}
+
 
 		/**
 		 * Remote cleanup

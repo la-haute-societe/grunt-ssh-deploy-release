@@ -1,18 +1,18 @@
 {
-  "version": "1.1.6",
-  "name": "grunt-ssh-deploy-release",
-  "description": "Grunt plugin for deploying release on remote server over ssh.",
-  "author": "La Haute Société (http://www.lahautesociete.com)",
-  "repository": "la-haute-societe/grunt-ssh-deploy-release",
-  "license": "MIT",
-  "main": "tasks/ssh-deploy-release.js",
-  "dependencies": {
-    "async": "^2.1.4",
-    "extend": "^3.0.0",
-    "moment": "^2.6.0",
-    "scp2": "^0.1.4",
-    "ssh2": "^0.2.22",
-    "filesize": "^3.3.0",
-    "archiver": "^1.1.0"
-  }
- }
+	"version": "1.2.0",
+	"name": "grunt-ssh-deploy-release",
+	"description": "Grunt plugin for deploying release on remote server over ssh.",
+	"author": "La Haute Société (http://www.lahautesociete.com)",
+	"repository": "la-haute-societe/grunt-ssh-deploy-release",
+	"license": "MIT",
+	"main": "tasks/ssh-deploy-release.js",
+	"dependencies": {
+		"async": "^2.1.4",
+		"extend": "^3.0.0",
+		"moment": "^2.6.0",
+		"scp2": "^0.1.4",
+		"ssh2": "^0.2.22",
+		"filesize": "^3.3.0",
+		"archiver": "^1.1.0"
+	}
+}

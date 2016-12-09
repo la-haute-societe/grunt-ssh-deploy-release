@@ -159,6 +159,45 @@ List of folders to make writeable on remote server. (chmod ugo+w)
 
 
 
+### Callback
+
+#### onBeforeDeploy
+Function called before deployment. Call `callback` to continue;
+
+Type: function(deployer, callback)
+
+
+#### onBeforeDeployExecute
+Array (or function returning array) of commands to execute on remote.
+
+Type: function(deployer) | []
+
+
+#### onBeforeLink
+Function called before symlink creation. Call `callback` to continue;
+
+Type: function(deployer, callback)
+
+
+#### onBeforeLinkExecute
+Array (or function returning array) of commands to execute on remote.
+
+Type: function(deployer) | []
+
+
+#### onAfterDeploy
+Function called after deployment. Call `callback` to continue;
+
+Type: function(deployer, callback)
+
+
+#### onAfterDeployExecute
+Array (or function returning array) of commands to execute on remote.
+
+Type: function(deployer) | []
+
+
+
 
 ## Todo
  - Synchro with rsync (diff)
