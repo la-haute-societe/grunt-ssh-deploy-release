@@ -4,19 +4,23 @@ module.exports = function (grunt) {
 	grunt.registerTask('ssh-deploy-release', 'Begin Deployment', function () {
 
 		// Dependencies
-		var path = require('path');
-		var fs = require('fs');
-		var done = this.async();
-		var Connection = require('ssh2');
-		var client = require('scp2');
-		var moment = require('moment');
-		var timestamp = moment().utc().format('YYYY-MM-DD-HH-mm-ss-SSS-UTC');
-		var async = require('async');
-		var extend = require('extend');
-		var filesize = require('filesize');
+		const path = require('path');
+		const fs = require('fs');
+		const done = this.async();
+		const Connection = require('ssh2');
+		const client = require('scp2');
+		const moment = require('moment');
+		const timestamp = moment().utc().format('YYYY-MM-DD-HH-mm-ss-SSS-UTC');
+		const async = require('async');
+		const extend = require('extend');
+		const filesize = require('filesize');
+		const exec = require('child_process').exec;
 
 		// Default options
 		var defaultOptions = {
+			// Deployment mode ('archive' or 'synchronize')
+			mode: 'archive',
+
 			// SSH / SCP connection
 			port: 22,
 			host: '',
@@ -30,6 +34,7 @@ module.exports = function (grunt) {
 			sharedFolder: 'shared',
 			releasesFolder: 'releases',
 			localPath: 'www',
+			synchronizedFolder: 'synchronized',
 
 			// Release
 			archiveName: 'release.zip',
@@ -96,6 +101,7 @@ module.exports = function (grunt) {
 				compressReleaseTask,
 				connectToRemoteTask,
 				createReleaseFolderOnRemoteTask,
+				uploadArchiveTask,
 				uploadReleaseTask,
 				decompressArchiveOnRemoteTask,
 				onBeforeLinkTask,
@@ -375,6 +381,11 @@ module.exports = function (grunt) {
 		 */
 		function compressReleaseTask(callback) {
 
+			if(options.mode != 'archive') {
+				callback();
+				return;
+			}
+
 			grunt.log.subhead('Compress release');
 
 			var archiver = require('archiver');
@@ -458,7 +469,13 @@ module.exports = function (grunt) {
 		 *
 		 * @param callback
 		 */
-		function uploadReleaseTask(callback) {
+		function uploadArchiveTask(callback) {
+
+			if(options.mode != 'archive') {
+				callback();
+				return;
+			}
+
 			var build = options.archiveName;
 
 			grunt.log.subhead('Upload release to remote');
@@ -475,12 +492,46 @@ module.exports = function (grunt) {
 			});
 		}
 
+
+		/**
+		 *
+		 * @param callback
+		 */
+		function uploadReleaseTask(callback) {
+
+			if(options.mode != 'synchronize') {
+				callback();
+				return;
+			}
+
+			grunt.log.subhead('Synchronize remote server');
+
+			const source = options.localPath + '/*';
+			const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
+			const synchronize = 'sshpass -p \'' + options.password + '\' rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target;
+			const copy = 'cp -r ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
+
+			exec(synchronize, function(error, stdout, stderr) {
+				execRemote(copy, false, function () {
+					grunt.log.ok('Done');
+					callback();
+				});
+			});
+		}
+
+
 		/**
 		 * Unzip on remote
 		 * @param callback
 		 * @returns {*}
 		 */
 		function decompressArchiveOnRemoteTask(callback) {
+
+			if(options.mode != 'archive') {
+				callback();
+				return;
+			}
+
 			var goToCurrent = "cd " + releasePath;
 			var untar = "unzip -q " + options.archiveName;
 			var cleanup = "rm " + path.posix.join(releasePath, options.archiveName);
@@ -654,6 +705,12 @@ module.exports = function (grunt) {
 		 * @returns {*}
 		 */
 		function deleteLocalArchiveTask(callback) {
+
+			if(options.mode != 'archive') {
+				callback();
+				return;
+			}
+
 			grunt.log.subhead('Delete local archive');
 			fs.unlink(options.archiveName);
 			grunt.log.ok('Done');
