@@ -509,10 +509,19 @@ module.exports = function (grunt) {
 			const source = options.localPath + '/*';
 			const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
 			const synchronize = 'sshpass -p \'' + options.password + '\' rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target;
-			const copy = 'cp -r ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
+			//const copy = 'cp -r ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
+			const copy = 'rsync -ravh ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
 
 			exec(synchronize, function(error, stdout, stderr) {
-				execRemote(copy, false, function () {
+				if(stderr) {
+					grunt.fail.fatal(stderr);
+				}
+				grunt.log.write(stdout);
+				grunt.log.ok('Done');
+
+				grunt.log.subhead('Copy release');
+
+				execRemote(copy, true, function (result) {
 					grunt.log.ok('Done');
 					callback();
 				});
