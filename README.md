@@ -100,9 +100,12 @@ Username used to connect to remote server.
 #### password
 Password used to connect to remote server.
 
-#### deployPath
-Absolute path on remote server where release will be deployed.
-Do not specify *currentReleaseLink* (or www folder) in this path.
+#### mode
+'archive' : Deploy an archive and decompress on remote server.
+
+'synchronize' : Use rsync. Synchronize in `synchronized` folder on remote server.
+
+Default : 'archive'
 
 
 #### readyTimeout
@@ -125,6 +128,15 @@ default : 'releases'
 #### localPath
 Name of the local folder to deploy.
 Default : 'www'
+
+#### deployPath
+Absolute path on remote server where release will be deployed.
+Do not specify *currentReleaseLink* (or www folder) in this path.
+
+#### synchronizedFolder
+Used when `mode` is 'synchronize'. Name of the remote folder where rsync synchronize release.
+Default : 'www'
+
 
 ### Releases
 #### archiveName

@@ -26,7 +26,6 @@ module.exports = function (grunt) {
 			host: '',
 			username: '',
 			password: '',
-			deployPath: '',
 			readyTimeout: 20000,
 
 			// Folders / link
@@ -34,6 +33,7 @@ module.exports = function (grunt) {
 			sharedFolder: 'shared',
 			releasesFolder: 'releases',
 			localPath: 'www',
+			deployPath: '',
 			synchronizedFolder: 'synchronized',
 
 			// Release
