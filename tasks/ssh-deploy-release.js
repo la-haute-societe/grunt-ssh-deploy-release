@@ -20,12 +20,23 @@ module.exports = function (grunt) {
 		var defaultOptions = {
 			// Deployment mode ('archive' or 'synchronize')
 			mode: 'archive',
+			archiveName: 'release.tar.gz',
+
+			// Archive type : 'zip' or 'tar'
+			archiveType: 'tar',
+			gzip: {
+				gzip: true,
+				gzipOptions: {
+					level: 5
+				}
+			},
 
 			// SSH / SCP connection
 			port: 22,
 			host: '',
 			username: '',
 			password: '',
+			privateKeyFile: null,
 			readyTimeout: 20000,
 
 			// Folders / link
@@ -37,7 +48,6 @@ module.exports = function (grunt) {
 			synchronizedFolder: 'synchronized',
 
 			// Release
-			archiveName: 'release.zip',
 			releasesToKeep: '3',
 			tag: timestamp,
 
@@ -95,6 +105,12 @@ module.exports = function (grunt) {
 		function init() {
 			client.defaults(getScpOptions(options));
 
+			// Private key authentication
+			// Read file
+			if (options.privateKeyFile) {
+				options.privateKey = grunt.file.read(options.privateKeyFile);
+			}
+
 			async.series([
 				onBeforeDeployTask,
 				onBeforeDeployExecuteTask,
@@ -149,8 +165,8 @@ module.exports = function (grunt) {
 			};
 
 			// Private key authentication
-			if (options.privateKey) {
-				scpOptions.privateKey = options.privateKey;
+			if (options.privateKeyFile) {
+				scpOptions.privateKey = grunt.file.read(options.privateKeyFile);
 				if (options.passphrase) {
 					scpOptions.passphrase = options.passphrase;
 				}
@@ -389,11 +405,8 @@ module.exports = function (grunt) {
 			grunt.log.subhead('Compress release');
 
 			var archiver = require('archiver');
-			var archive = archiver.create('zip', {});
-
-
 			var output = fs.createWriteStream(options.archiveName);
-			var archive = archiver('zip');
+			var archive = archiver(options.archiveType, options.gzip);
 
 			output.on('close', function () {
 				grunt.log.ok('Archive created : ' + filesize(archive.pointer()));
@@ -444,6 +457,8 @@ module.exports = function (grunt) {
 				grunt.log.subhead("Closed from " + options.host);
 				return true;
 			});
+
+
 			connection.connect(options);
 
 			return connection;
@@ -478,7 +493,7 @@ module.exports = function (grunt) {
 
 			var build = options.archiveName;
 
-			grunt.log.subhead('Upload release to remote');
+			grunt.log.subhead('Upload archive to remote');
 			client.scp(build, {
 				path: releasePath
 			}, function (error) {
@@ -508,11 +523,27 @@ module.exports = function (grunt) {
 
 			const source = options.localPath + '/*';
 			const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
-			const synchronize = 'sshpass -p \'' + options.password + '\' rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target;
-			//const copy = 'cp -r ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
 			const copy = 'rsync -ravh ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
 
-			exec(synchronize, function(error, stdout, stderr) {
+			// Construct rsync command
+			let synchronizeCommand = '';
+			let sshpass = '';
+
+			// Use password
+			if(options.password != '') {
+				sshpass = 'sshpass -p \'' + options.password + '\' ';
+			}
+
+			// Use privateKey
+			else if(options.privateKeyFile != null) {
+				grunt.fail.fatal('PrivateKey not compatible with synchronize mode.');
+			}
+
+			// Concat
+			synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
+
+			// Exec !
+			exec(synchronizeCommand, function(error, stdout, stderr) {
 				if(stderr) {
 					grunt.fail.fatal(stderr);
 				}
@@ -541,8 +572,18 @@ module.exports = function (grunt) {
 				return;
 			}
 
+			const untarMap = {
+				'zip': "unzip -q " + options.archiveName,
+				'tar': "tar -xvf " + options.archiveName,
+			};
+
+			// Check archiveType is supported
+			if( ! untarMap[options.archiveType]) {
+				grunt.fail.fatal(options.archiveType + ' not supported.');
+			}
+
 			var goToCurrent = "cd " + releasePath;
-			var untar = "unzip -q " + options.archiveName;
+			var untar = untarMap[options.archiveType];
 			var cleanup = "rm " + path.posix.join(releasePath, options.archiveName);
 			var command = goToCurrent + " && " + untar + " && " + cleanup;
 

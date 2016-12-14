@@ -100,12 +100,30 @@ Username used to connect to remote server.
 #### password
 Password used to connect to remote server.
 
+#### privateKeyFile
+Path to privateKey file (see ssh2 documentation).
+
+Default: null
+
+
 #### mode
 'archive' : Deploy an archive and decompress on remote server.
 
 'synchronize' : Use rsync. Synchronize in `synchronized` folder on remote server.
 
 Default : 'archive'
+
+
+#### archiveType
+'zip' : Use zip compression (``unzip`` command on remote)
+
+'tar' : Use tar gz compression (``tar`` command on remote)
+
+Default : 'tar'
+
+#### archiveName
+Name of the archive.
+Default : 'release.tar.gz'
 
 
 #### readyTimeout
@@ -139,9 +157,6 @@ Default : 'www'
 
 
 ### Releases
-#### archiveName
-Name of the archive.
-Default : 'release.zip'
 
 #### releasesToKeep
 Number of releases to keep on remote server.
@@ -207,9 +222,3 @@ Type: function(deployer, callback)
 Array (or function returning array) of commands to execute on remote.
 
 Type: function(deployer) | []
-
-
-
-
-## Todo
- - Synchro with rsync (diff)
