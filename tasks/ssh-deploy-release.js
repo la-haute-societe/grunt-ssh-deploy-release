@@ -117,6 +117,7 @@ module.exports = function (grunt) {
 				compressReleaseTask,
 				connectToRemoteTask,
 				createReleaseFolderOnRemoteTask,
+				createSynchronizedFolderOnRemoteTask,
 				uploadArchiveTask,
 				uploadReleaseTask,
 				decompressArchiveOnRemoteTask,
@@ -481,6 +482,28 @@ module.exports = function (grunt) {
 		}
 
 		/**
+		 * Create synchronized folder
+		 * @param callback
+		 */
+		function createSynchronizedFolderOnRemoteTask(callback) {
+
+			if(options.mode != 'synchronize') {
+				callback();
+				return;
+			}
+
+			const command = 'mkdir -p ' + options.deployPath + '/' + options.synchronizedFolder;
+
+			grunt.log.subhead('Create synchronized folder on remote');
+			grunt.log.ok(releasePath);
+
+			execRemote(command, options.debug, function () {
+				grunt.log.ok('Done');
+				callback();
+			});
+		}
+
+		/**
 		 *
 		 * @param callback
 		 */
@@ -525,8 +548,6 @@ module.exports = function (grunt) {
 			const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
 			const copy = 'rsync -ravh ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
 
-			// Construct rsync command
-			let synchronizeCommand = '';
 			let sshpass = '';
 
 			// Use password
@@ -539,12 +560,12 @@ module.exports = function (grunt) {
 				grunt.fail.fatal('PrivateKey not compatible with synchronize mode.');
 			}
 
-			// Concat
-			synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
+			// Construct rsync command
+			let synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
 
 			// Exec !
 			exec(synchronizeCommand, function(error, stdout, stderr) {
-				if(stderr) {
+				if(stderr && stderr.substr(0, 7) != 'Warning') {
 					grunt.fail.fatal(stderr);
 				}
 				grunt.log.write(stdout);
