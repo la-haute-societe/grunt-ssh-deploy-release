@@ -669,7 +669,7 @@ module.exports = function (grunt) {
 
 			async.eachSeries(options.create, function (currentFolderToCreate, itemCallback) {
 				var path = releasePath + '/' + currentFolderToCreate;
-				var command = 'mkdir ' + path + ' && chmod ugo+w ' + path;
+				var command = 'mkdir -p ' + path + ' && chmod ugo+w ' + path;
 
 				grunt.log.writeln(' - ' + currentFolderToCreate);
 				execRemote(command, options.debug, function () {
