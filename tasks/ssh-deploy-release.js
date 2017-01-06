@@ -63,6 +63,10 @@ module.exports = function (grunt) {
             // Directories to make writeable
             makeWriteable: [],
 
+            // Allow remove release on remote
+            // Warning !!
+            allowRemove: false,
+
             // Callback
             onBeforeDeploy: function (deployer, callback) {
                 callback();
@@ -111,13 +115,43 @@ module.exports = function (grunt) {
                 options.privateKey = grunt.file.read(options.privateKeyFile);
             }
 
+            if(grunt.option('remove')) {
+                removeRelease();
+            }
+            else {
+                deployRelease();
+            }
+        }
+
+        /**
+         * Remove release on remote
+         */
+        function removeRelease() {
+
+            if( ! options.allowRemove) {
+                grunt.fail.fatal('Remove release is not allowed. (check "allowRemove" option)');
+                return;
+            }
+
+            async.series([
+                connectToRemoteTask,
+                removeReleaseTask,
+                closeConnectionTask
+            ], function () {
+                done();
+            });
+        }
+
+        /**
+         * Launch release deployment
+         */
+        function deployRelease() {
             async.series([
                 onBeforeDeployTask,
                 onBeforeDeployExecuteTask,
                 compressReleaseTask,
                 connectToRemoteTask,
                 createReleaseFolderOnRemoteTask,
-                createSynchronizedFolderOnRemoteTask,
                 uploadArchiveTask,
                 uploadReleaseTask,
                 decompressArchiveOnRemoteTask,
@@ -275,18 +309,15 @@ module.exports = function (grunt) {
          * @param callback
          */
         function createSymboliclink(target, link, callback) {
-            var commands = [
+            var command = [
                 'mkdir -p `dirname ' + link + '`', // Create the parent of the symlink target
                 'rm -rf ' + link,
                 'mkdir -p ' + realpath(link + '/../' + target), // Create the symlink target
+                'cd ' + releasePath,
                 'ln -nfs ' + target + ' ' + link
-            ];
+            ].join(' && ');
 
-            async.eachSeries(commands, (command, innerCallback) => {
-                execRemote(command, options.debug, function () {
-                    innerCallback();
-                });
-            }, () => {
+            execRemote(command, options.debug, function () {
                 grunt.log.ok('Done');
                 callback();
             });
@@ -320,8 +351,8 @@ module.exports = function (grunt) {
                 }
                 // This reduces the realpath
                 if (arr[k] === '..') {
-					/* But only if there more than 3 parts in the path-array.
-					 * The first three parts are for the uri */
+                    /* But only if there more than 3 parts in the path-array.
+                     * The first three parts are for the uri */
                     if (path.length > 3) {
                         path.pop()
                     }
@@ -485,28 +516,6 @@ module.exports = function (grunt) {
         }
 
         /**
-         * Create synchronized folder
-         * @param callback
-         */
-        function createSynchronizedFolderOnRemoteTask(callback) {
-
-            if(options.mode != 'synchronize') {
-                callback();
-                return;
-            }
-
-            const command = 'mkdir -p ' + options.deployPath + '/' + options.synchronizedFolder;
-
-            grunt.log.subhead('Create synchronized folder on remote');
-            grunt.log.ok(releasePath);
-
-            execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
-                callback();
-            });
-        }
-
-        /**
          *
          * @param callback
          */
@@ -551,6 +560,8 @@ module.exports = function (grunt) {
             const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
             const copy = 'rsync -ravh ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
 
+            // Construct rsync command
+            let synchronizeCommand = '';
             let sshpass = '';
 
             // Use password
@@ -563,12 +574,12 @@ module.exports = function (grunt) {
                 grunt.fail.fatal('PrivateKey not compatible with synchronize mode.');
             }
 
-            // Construct rsync command
-            let synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
+            // Concat
+            synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
 
             // Exec !
             exec(synchronizeCommand, function(error, stdout, stderr) {
-                if(stderr && stderr.substr(0, 7) != 'Warning') {
+                if(stderr) {
                     grunt.fail.fatal(stderr);
                 }
                 grunt.log.write(stdout);
@@ -672,7 +683,7 @@ module.exports = function (grunt) {
 
             async.eachSeries(options.create, function (currentFolderToCreate, itemCallback) {
                 var path = releasePath + '/' + currentFolderToCreate;
-                var command = 'mkdir -p ' + path + ' && chmod ugo+w ' + path;
+                var command = 'mkdir ' + path + ' && chmod ugo+w ' + path;
 
                 grunt.log.writeln(' - ' + currentFolderToCreate);
                 execRemote(command, options.debug, function () {
@@ -802,5 +813,19 @@ module.exports = function (grunt) {
             callback();
         }
 
+
+        /**
+         * Remove release on remote
+         * @param callback
+         */
+        function removeReleaseTask(callback){
+            grunt.log.subhead('Remove releases on remote');
+
+            var command = "rm -rf " + options.deployPath;
+            execRemote(command, options.debug, function () {
+                grunt.log.ok('Done');
+                callback();
+            });
+        }
     });
 };

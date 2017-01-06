@@ -83,12 +83,19 @@ grunt.config.set('ssh-deploy-release', {
 `grunt ssh-deploy-release:environmentName`
 
 
+### Remove release
+`grunt ssh-deploy-release:environmentName --remove`
+
+See `allowRemove` option.
+
+
 ## Options
 
 ### SCP connection
 
 #### port
 Port used to connect to remote server.
+
 Default : 22
 
 #### host
@@ -123,28 +130,34 @@ Default : 'tar'
 
 #### archiveName
 Name of the archive.
+
 Default : 'release.tar.gz'
 
 
 #### readyTimeout
 SCP connection timeout duration.
+
 Default : 20000
 
 ### Path
 #### currentReleaseLink
 Name of the current release symbolic link. Relative to `deployPath`.
+
 Defaut : 'www'
 
 #### sharedFolder
 Name of the folder containing shared folders. Relative to `deployPath`.
+
 Default : 'shared'
 
 #### releasesFolder
 Name of the folder containing releases. Relative to `deployPath`.
-default : 'releases'
+
+Default : 'releases'
 
 #### localPath
 Name of the local folder to deploy.
+
 Default : 'www'
 
 #### deployPath
@@ -153,6 +166,7 @@ Do not specify *currentReleaseLink* (or www folder) in this path.
 
 #### synchronizedFolder
 Used when `mode` is 'synchronize'. Name of the remote folder where rsync synchronize release.
+
 Default : 'www'
 
 
@@ -160,14 +174,17 @@ Default : 'www'
 
 #### releasesToKeep
 Number of releases to keep on remote server.
+
 Default : 3
 
 #### tag
 Name of the release. Must be different for each release.
+
 Default : Use current timestamp.
 
 #### exclude
 List of paths (glob format) to not deploy. Paths must be relative to `localPath`.
+
 Default : []
 
 #### share
@@ -183,6 +200,12 @@ List of folders to create on remote server.
 
 #### makeWriteable
 List of folders to make writeable on remote server. (chmod ugo+w)
+
+
+#### allowRemove
+If true, remote release folder can be deleted with `--remove` cli parameter.
+
+Default: false
 
 
 
