@@ -60,8 +60,8 @@ module.exports = function (grunt) {
             // Directories to create
             create: [],
 
-            // Directories to make writeable
-            makeWriteable: [],
+            // Directories to make writable
+            makeWritable: [],
 
             // Allow remove release on remote
             // Warning !!
@@ -159,7 +159,7 @@ module.exports = function (grunt) {
                 onBeforeLinkExecuteTask,
                 updateSharedSymbolicLinkOnRemoteTask,
                 createFolderTask,
-                makeDirectoriesWriteableTask,
+                makeDirectoriesWritableTask,
                 updateCurrentSymbolicLinkOnRemoteTask,
                 onAfterDeployTask,
                 onAfterDeployExecuteTask,
@@ -182,6 +182,12 @@ module.exports = function (grunt) {
                 grunt.config.get('ssh-deploy-release').options,
                 grunt.config.get('ssh-deploy-release')[task.args]['options']
             );
+
+            // Fix : "writeable" is an alias of "writable"
+            if(options.writeable) {
+                options.writable = options.writeable;
+            }
+
             return options;
         }
 
@@ -268,6 +274,11 @@ module.exports = function (grunt) {
                 }
 
                 stream.on('data', function (data, extended) {
+                    if(showLog) {
+                        grunt.log.write((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
+                        return;
+                    }
+
                     grunt.log.debug((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
                 });
 
@@ -397,6 +408,7 @@ module.exports = function (grunt) {
 
             // Execute each command
             async.eachSeries(commands, (command, innerCallback) => {
+                grunt.log.subhead('Execute on remote : ' + command);
                 deployer.execRemote(command, true, innerCallback);
             }, () => {
                 grunt.log.ok('Done');
@@ -695,22 +707,22 @@ module.exports = function (grunt) {
 
 
         /**
-         * Make directories writeable
+         * Make directories writable
          * @param callback
          */
-        function makeDirectoriesWriteableTask(callback) {
-            if (!options.makeWriteable || options.makeWriteable.length == 0) {
+        function makeDirectoriesWritableTask(callback) {
+            if (!options.makeWritable || options.makeWritable.length == 0) {
                 callback();
                 return;
             }
 
-            grunt.log.subhead('Make folders writeable on remote');
+            grunt.log.subhead('Make folders writable on remote');
 
-            async.eachSeries(options.makeWriteable, function (currentFolderToMakeWriteable, itemCallback) {
-                var path = releasePath + '/' + currentFolderToMakeWriteable;
+            async.eachSeries(options.makeWritable, function (currentFolderToMakeWritable, itemCallback) {
+                var path = releasePath + '/' + currentFolderToMakeWritable;
                 var command = 'chmod ugo+w ' + path;
 
-                grunt.log.writeln(' - ' + currentFolderToMakeWriteable);
+                grunt.log.writeln(' - ' + currentFolderToMakeWritable);
                 execRemote(command, options.debug, function () {
                     grunt.log.ok('Done');
                     itemCallback();
@@ -730,7 +742,6 @@ module.exports = function (grunt) {
             var target = options.releasesFolder + '/' +releaseTag;
 
             createSymboliclink(target, getCurrentPath(), function () {
-                grunt.log.ok('Done');
                 callback();
             });
         }

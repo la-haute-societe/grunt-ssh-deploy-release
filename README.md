@@ -43,14 +43,14 @@ grunt.config.set('ssh-deploy-release', {
             'images': 'assets/images',
         },
         
-        // Create folder + make writeable
+        // Create folder + make writable
         create: [
         	'tmp',
         	'logs'
         ],
         
-        // Make writeable folders
-        makeWriteable: [
+        // Make writable folders
+        makeWritable: [
         	'test',
         	'foo'
         ]
@@ -204,7 +204,7 @@ Values = Symlink path  (relative to release folder)
 List of folders to create on the remote server.
 
 
-#### makeWriteable
+#### makeWritable
 List of folders to make writable on the remote server. (chmod ugo+w)
 
 
