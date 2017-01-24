@@ -1,10 +1,15 @@
 # grunt-ssh-deploy-release
 
 Create an archive of "localPath" (except excluded folders). 
-Copy this archive to remote server using SCP. 
+
+Copy this archive to the remote server using SCP. 
+
 Decompress the release on remote server. 
+
 Create "shared" folders symlink. 
+
 Create release symlink. 
+
 Clean temporary files and old releases.
 
 
@@ -94,7 +99,7 @@ See `allowRemove` option.
 ### SCP connection
 
 #### port
-Port used to connect to remote server.
+Port used to connect to the remote server.
 
 Default : 22
 
@@ -102,29 +107,29 @@ Default : 22
 Remote server hostname.
 
 #### username
-Username used to connect to remote server.
+Username used to connect to the remote server.
 
 #### password
-Password used to connect to remote server.
+Password used to connect to the remote server.
 
 #### privateKeyFile
-Path to privateKey file (see ssh2 documentation).
+Path to the privateKey file (see ssh2 documentation).
 
 Default: null
 
 
 #### mode
-'archive' : Deploy an archive and decompress on remote server.
+'archive' : Deploy an archive and decompress it on the remote server.
 
-'synchronize' : Use rsync. Synchronize in `synchronized` folder on remote server.
+'synchronize' : Use *rsync*. Files are synchronized in the `synchronized` folder on the remote server.
 
 Default : 'archive'
 
 
 #### archiveType
-'zip' : Use zip compression (``unzip`` command on remote)
+'zip' : Use *zip* compression (``unzip`` command on remote)
 
-'tar' : Use tar gz compression (``tar`` command on remote)
+'tar' : Use *tar gz* compression (``tar`` command on remote)
 
 Default : 'tar'
 
@@ -161,11 +166,12 @@ Name of the local folder to deploy.
 Default : 'www'
 
 #### deployPath
-Absolute path on remote server where release will be deployed.
-Do not specify *currentReleaseLink* (or www folder) in this path.
+Absolute path on the remote server where releases will be deployed.
+Do not specify *currentReleaseLink* (or *www* folder) in this path.
 
 #### synchronizedFolder
-Used when `mode` is 'synchronize'. Name of the remote folder where rsync synchronize release.
+Name of the remote folder where *rsync* synchronize release.
+Used when `mode` is 'synchronize'.
 
 Default : 'www'
 
@@ -173,7 +179,7 @@ Default : 'www'
 ### Releases
 
 #### releasesToKeep
-Number of releases to keep on remote server.
+Number of releases to keep on the remote server.
 
 Default : 3
 
@@ -183,27 +189,27 @@ Name of the release. Must be different for each release.
 Default : Use current timestamp.
 
 #### exclude
-List of paths (glob format) to not deploy. Paths must be relative to `localPath`.
+List of paths (*glob* format) to **not** deploy. Paths must be relative to `localPath`.
 
 Default : []
 
 #### share
-List of folders to "share" between release. A symlink will be created for each item.
+List of folders to "share" between releases. A symlink will be created for each item.
 
 Keys = Folder to share (relative to `sharedFolder`)
 
 Values = Symlink path  (relative to release folder)
 
 #### create
-List of folders to create on remote server.
+List of folders to create on the remote server.
 
 
 #### makeWriteable
-List of folders to make writeable on remote server. (chmod ugo+w)
+List of folders to make writable on the remote server. (chmod ugo+w)
 
 
 #### allowRemove
-If true, remote release folder can be deleted with `--remove` cli parameter.
+If true, the remote release folder can be deleted with `--remove` cli parameter.
 
 Default: false
 
@@ -218,7 +224,7 @@ Type: function(deployer, callback)
 
 
 #### onBeforeDeployExecute
-Array (or function returning array) of commands to execute on remote.
+Array (or function returning array) of commands to execute on the remote server.
 
 Type: function(deployer) | []
 
@@ -230,7 +236,7 @@ Type: function(deployer, callback)
 
 
 #### onBeforeLinkExecute
-Array (or function returning array) of commands to execute on remote.
+Array (or function returning array) of commands to execute on the remote server.
 
 Type: function(deployer) | []
 
@@ -242,6 +248,6 @@ Type: function(deployer, callback)
 
 
 #### onAfterDeployExecute
-Array (or function returning array) of commands to execute on remote.
+Array (or function returning array) of commands to execute on the remote server.
 
 Type: function(deployer) | []
