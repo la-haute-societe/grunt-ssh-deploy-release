@@ -742,6 +742,7 @@ module.exports = function (grunt) {
             var target = options.releasesFolder + '/' +releaseTag;
 
             createSymboliclink(target, getCurrentPath(), function () {
+                grunt.log.ok('Done');
                 callback();
             });
         }
