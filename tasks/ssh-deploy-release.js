@@ -320,18 +320,18 @@ module.exports = function (grunt) {
          * @param callback
          */
         function createSymboliclink(target, link, callback) {
-            var command = [
-                'mkdir -p `dirname ' + link + '`', // Create the parent of the symlink target
+            var commands = [
+                'mkdir -p ' + link, // Create the parent of the symlink target
                 'rm -rf ' + link,
                 'mkdir -p ' + realpath(link + '/../' + target), // Create the symlink target
-                'cd ' + releasePath,
                 'ln -nfs ' + target + ' ' + link
-            ].join(' && ');
+            ];
 
-            execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
-                callback();
-            });
+            async.eachSeries(commands, function (command, itemCallback) {
+                execRemote(command, options.debug, function () {
+                    itemCallback();
+                });
+            }, callback);
         }
 
         /**
