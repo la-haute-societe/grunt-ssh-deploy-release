@@ -13,6 +13,13 @@ Create release symlink.
 Clean temporary files and old releases.
 
 
+## TOC
+- [Installation](#installation)
+- [Grunt configuration](#grunt-configuration)
+- [Execute](#execute)
+- [Options](#options)
+- [Examples](#examples)
+
 
 ## Installation
 
@@ -82,16 +89,25 @@ grunt.config.set('ssh-deploy-release', {
 });
 ```
 
-## Usage
+## Execute
 
 ### Deploy to "environmentName"
-`grunt ssh-deploy-release:environmentName`
-
+```
+grunt ssh-deploy-release:environmentName
+```
 
 ### Remove release
-`grunt ssh-deploy-release:environmentName --remove`
-
+```
+grunt ssh-deploy-release:environmentName --remove
+```
 See `allowRemove` option.
+
+
+### Enable debug
+Use `--debug` option :
+```
+grunt ssh-deploy-release:environmentName --debug
+```
 
 
 ## Options
@@ -217,6 +233,59 @@ Default: false
 
 ### Callback
 
+##### Deployer object
+The following object is passed to ``onXXXDeploy`` functions :
+```js
+{
+    // Current configuration
+    options: { ... },
+    
+    // Current release name
+    releaseTag: '2017-01-25-08-40-15-138-UTC',
+    
+    // Current release path on the remote server
+    releasePath: '/opt/.../releases/2017-01-25-08-40-15-138-UTC',
+    
+    // Use this function to execute some commands on the remote server
+    execRemote: [Function: execRemote] 
+}
+```
+
+##### Example with onXXXDeploy
+*onBeforeDeploy, onBeforeLink, onAfterDeploy options.*
+
+You have to call ``callback`` function to continue deployment process.
+
+```js
+onAfterDeploy: (deployer, callback) => {
+    const command = 'pwd';
+    const showLog = false;
+    deployer.execRemote(command, showLog, callback);
+}
+```
+
+##### Example with onXXXDeployExecute
+*onBeforeDeployExecute, onBeforeLinkExecute, onAfterDeployExecute options.*
+
+```js
+onAfterDeployExecute: [
+    'do something on the remote server',
+    'and another thing'
+]
+```
+
+**Or** with a function :
+
+```js
+onAfterDeployExecute: (deployer) => {
+    grunt.log.subhead('Doing something');
+    return [
+        'do something on the remote server',
+        'and another thing'
+    ];
+}
+```
+
 #### onBeforeDeploy
 Function called before deployment. Call `callback` to continue;
 
@@ -251,3 +320,103 @@ Type: function(deployer, callback)
 Array (or function returning array) of commands to execute on the remote server.
 
 Type: function(deployer) | []
+
+
+
+## Examples
+
+## Restart Apache after deployment
+```js
+grunt.config.set('ssh-deploy-release', {
+    options: {
+        localPath: 'public',
+    },
+    
+    production: {
+        options: {
+            host: 'hostname',
+            username: 'username',
+            password: 'password',
+            deployPath: '/opt/path/to'
+        }
+    },
+    
+    onAfterDeployExecute: (deployer) => {
+        grunt.log.subhead('Restart php-fpm and apache');
+        return [
+            'sudo /opt/bitnami/ctlscript.sh restart apache'
+        ];
+    }
+});
+
+
+```
+## Dynamic environments
+
+For example, create one environement by git branch.
+
+```js
+grunt.config.set('ssh-deploy-release', {
+    options: {
+        localPath: 'public',
+    },
+    
+    review: {
+        options: {
+            host: 'hostname',
+            username: 'username',
+            password: 'password',
+            deployPath: '/opt/path/to/' + grunt.option('branch'),
+            allowRemove: true
+        }
+    },
+});
+```
+
+### Deploy a branch 
+```
+grunt ssh-deploy-release:review --branch="BRANCH_NAME"
+```
+
+### Remove a branch on the remote server
+```
+grunt ssh-deploy-release:review --branch="BRANCH_NAME" --remove
+```
+ > In order to avoid mistakes (remove production..), ``allowRemove`` must be true to remove release on the remote server
+
+
+### Plug it with Gitlab CI to deploy review app
+
+Example of ``.gitlab-ci.yml`` :
+
+```
+ Deploy review:
+    stage: deploy
+    except:
+     - preproduction
+     - production
+    environment:
+      name: review/$CI_BUILD_REF_SLUG
+      url: http://host/$CI_BUILD_REF_SLUG/www/
+      on_stop: stop_review
+    script:
+     - yarn
+     - grunt ssh-deploy-release:review --branch="$CI_BUILD_REF_SLUG"
+
+
+  stop_review:
+    stage: deploy
+    script:
+     - yarn
+     - grunt ssh-deploy-release:review --branch="$CI_BUILD_REF_SLUG" --remove
+    when: manual
+    variables:
+      GIT_STRATEGY: none
+    except:
+     - preproduction
+     - production
+    environment:
+      name: review/$CI_BUILD_REF_SLUG
+      action: stop
+```
+
