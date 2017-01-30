@@ -60,8 +60,11 @@ module.exports = function (grunt) {
             // Directories to create
             create: [],
 
-            // Directories to make writable
+            // File to make writable
             makeWritable: [],
+
+            // Files to make executable
+            makeExecutable: [],
 
             // Allow remove release on remote
             // Warning !!
@@ -160,6 +163,7 @@ module.exports = function (grunt) {
                 updateSharedSymbolicLinkOnRemoteTask,
                 createFolderTask,
                 makeDirectoriesWritableTask,
+                makeFilesExecutableTask,
                 updateCurrentSymbolicLinkOnRemoteTask,
                 onAfterDeployTask,
                 onAfterDeployExecuteTask,
@@ -723,6 +727,30 @@ module.exports = function (grunt) {
                 var command = 'chmod ugo+w ' + path;
 
                 grunt.log.writeln(' - ' + currentFolderToMakeWritable);
+                execRemote(command, options.debug, function () {
+                    grunt.log.ok('Done');
+                    itemCallback();
+                });
+            }, callback);
+        }
+
+        /**
+         * Make files executable
+         * @param callback
+         */
+        function makeFilesExecutableTask(callback) {
+            if (!options.makeExecutable || options.makeExecutable.length == 0) {
+                callback();
+                return;
+            }
+
+            grunt.log.subhead('Make files executables on remote');
+
+            async.eachSeries(options.makeExecutable, function (currentFileToMakeExecutable, itemCallback) {
+                var path = releasePath + '/' + currentFileToMakeExecutable;
+                var command = 'chmod ugo+x ' + path;
+
+                grunt.log.writeln(' - ' + currentFileToMakeExecutable);
                 execRemote(command, options.debug, function () {
                     grunt.log.ok('Done');
                     itemCallback();

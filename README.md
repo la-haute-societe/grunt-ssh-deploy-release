@@ -19,6 +19,7 @@ Clean temporary files and old releases.
 - [Execute](#execute)
 - [Options](#options)
 - [Examples](#examples)
+- [Known issues](#known-issues)
 
 
 ## Installation
@@ -221,7 +222,11 @@ List of folders to create on the remote server.
 
 
 #### makeWritable
-List of folders to make writable on the remote server. (chmod ugo+w)
+List of files to make writable on the remote server. (chmod ugo+w)
+
+
+#### makeExecutable
+List of files to make executable on the remote server. (chmod ugo+x)
 
 
 #### allowRemove
@@ -420,3 +425,18 @@ Example of ``.gitlab-ci.yml`` :
       action: stop
 ```
 
+
+## Known issues
+ 
+### Command not found or not executed
+
+A command on a callback method is not executed or not found. 
+Try to add `set -i && source ~/.bashrc &&` before your commmand : 
+
+```
+onAfterDeployExecute:[
+    'set -i && source ~/.bashrc && my command'
+]
+```
+
+See this issue : https://github.com/mscdex/ssh2/issues/77
