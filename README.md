@@ -13,6 +13,23 @@ Create release symlink.
 Clean temporary files and old releases.
 
 
+```
+/deployPath
+    |
+    ├── www --> symlink to ./releases/<currentRelease>
+    |
+    ├── releases
+    |   ├── 2017-02-08-17-14-21-867-UTC
+    |   ├── ...
+    |   └── 2017-02-09-18-01-10-765-UTC
+    |       ├── ...
+    |       └── logs --> symlink to shared/logs
+    |
+    └── shared
+        └── logs                    
+```
+
+
 ## TOC
 - [Installation](#installation)
 - [Grunt configuration](#grunt-configuration)
