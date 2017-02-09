@@ -30,6 +30,7 @@ module.exports = function (grunt) {
                     level: 5
                 }
             },
+            deleteLocalArchiveAfterDeployment : true,
 
             // SSH / SCP connection
             port: 22,
@@ -831,7 +832,7 @@ module.exports = function (grunt) {
          */
         function deleteLocalArchiveTask(callback) {
 
-            if(options.mode != 'archive') {
+            if(options.mode != 'archive' || ! options.deleteLocalArchiveAfterDeployment) {
                 callback();
                 return;
             }

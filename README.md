@@ -156,6 +156,11 @@ Name of the archive.
 Default : 'release.tar.gz'
 
 
+#### deleteLocalArchiveAfterDeployment
+Delete the local archive after the deployment. 
+
+Default : true
+
 #### readyTimeout
 SCP connection timeout duration.
 
