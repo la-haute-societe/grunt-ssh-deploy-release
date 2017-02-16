@@ -250,17 +250,13 @@ Default : []
 List of folders to "share" between releases. A symlink will be created for each item.  
 Item can be either a string or an object (to specify the mode to set to the symlink target).
 
-```json
-{
-    ...
-    share: {
-        'images': 'assets/images',
-        'upload': {
-            symlink: 'app/upload',
-            mode:    '777' // Will chmod 777 shared/upload
-        }
+```js
+share: {
+    'images': 'assets/images',
+    'upload': {
+        symlink: 'app/upload',
+        mode:    '777' // Will chmod 777 shared/upload
     }
-    ...
 }
 ```
 Keys = Folder to share (relative to `sharedFolder`)
