@@ -421,6 +421,14 @@ module.exports = function (grunt) {
             });
         }
 
+        function remoteChmod(path, mode, callback) {
+            const command = 'chmod ' + mode + ' ' + path;
+
+            execRemote(command, options.debug, function () {
+                callback();
+            });
+        }
+
 
         // TASKS ==========================================
 
@@ -498,6 +506,7 @@ module.exports = function (grunt) {
             // Error event
             connection.on('error', function (error) {
                 grunt.log.error("Error : " + options.host);
+                console.log(error, connection);
                 grunt.log.errorlns(error);
                 if (error) {
                     throw error;
@@ -524,7 +533,7 @@ module.exports = function (grunt) {
             var command = 'mkdir -p ' + releasePath;
 
             grunt.log.subhead('Create release folder on remote');
-            grunt.log.ok(releasePath);
+            grunt.log.writeln(' - ' + releasePath);
 
             execRemote(command, options.debug, function () {
                 grunt.log.ok('Done');
@@ -674,14 +683,47 @@ module.exports = function (grunt) {
 
             grunt.log.subhead('Update shared symlink on remote');
 
-            async.eachSeries(Object.keys(options.share), function (currentSharedFolder, callback) {
-                var linkPath = releasePath + '/' + options.share[currentSharedFolder];
-                var upwardPath = getReversePath(options.share[currentSharedFolder]);
-                var target = upwardPath + '/../' + options.sharedFolder + '/' + currentSharedFolder;
+            async.eachSeries(Object.keys(options.share), function (currentSharedFolder, itemCallback) {
+                const configValue = options.share[currentSharedFolder];
+                let symlinkName   = configValue;
+                let mode          = null;
 
-                grunt.log.writeln(' - ' + options.share[currentSharedFolder] + ' ==> ' + currentSharedFolder);
-                createSymboliclink(target, linkPath, callback);
-            }, callback);
+                if (
+                    typeof configValue == 'object'
+                    && 'symlink' in configValue
+                ) {
+                    symlinkName = configValue.symlink;
+                }
+
+                if (
+                    typeof configValue == 'object'
+                    && 'mode' in configValue
+                ) {
+                    mode = configValue.mode;
+                }
+
+                const linkPath = releasePath + '/' + symlinkName;
+                const upwardPath = getReversePath(symlinkName);
+                const target = upwardPath + '/../' + options.sharedFolder + '/' + currentSharedFolder;
+
+                grunt.log.writeln(' - ' + symlinkName + ' ==> ' + currentSharedFolder);
+                createSymboliclink(target, linkPath, () => {
+                    if (!mode) {
+                        itemCallback();
+                        return;
+                    }
+
+                    grunt.log.writeln('   chmod ' + mode);
+
+                    remoteChmod(linkPath, mode, () => {
+                        itemCallback();
+                    });
+                });
+            }, () => {
+                grunt.log.ok('Done');
+
+                callback();
+            });
         }
 
 
@@ -704,10 +746,12 @@ module.exports = function (grunt) {
 
                 grunt.log.writeln(' - ' + currentFolderToCreate);
                 execRemote(command, options.debug, function () {
-                    grunt.log.ok('Done');
                     itemCallback();
                 });
-            }, callback);
+            }, () => {
+                grunt.log.ok('Done');
+                callback();
+            });
         }
 
 
@@ -724,15 +768,17 @@ module.exports = function (grunt) {
             grunt.log.subhead('Make folders writable on remote');
 
             async.eachSeries(options.makeWritable, function (currentFolderToMakeWritable, itemCallback) {
-                var path = releasePath + '/' + currentFolderToMakeWritable;
-                var command = 'chmod ugo+w ' + path;
+                const path = releasePath + '/' + currentFolderToMakeWritable;
+                const mode = 'ugo+w';
 
                 grunt.log.writeln(' - ' + currentFolderToMakeWritable);
-                execRemote(command, options.debug, function () {
-                    grunt.log.ok('Done');
+                remoteChmod(path, mode, () => {
                     itemCallback();
                 });
-            }, callback);
+            }, () => {
+                grunt.log.ok('Done');
+                callback();
+            });
         }
 
         /**

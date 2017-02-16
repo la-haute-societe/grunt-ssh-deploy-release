@@ -66,6 +66,10 @@ grunt.config.set('ssh-deploy-release', {
         // Example : 'sharedFolder' : 'linkName'
         share: {
             'images': 'assets/images',
+            'upload': {
+                symlink: 'app/upload',
+                mode:    '777',
+            },
         },
         
         // Create folder + make writable
@@ -132,6 +136,12 @@ grunt ssh-deploy-release:environmentName --debug
 
 ### SCP connection
 
+ssh-deploy-release uses ssh2 to handle SSH connections.  
+The `options` object is forwarded to `ssh2` methods,
+which means you can set all `ssh2` options:
+
+ - [ssh2 documentation](https://github.com/mscdex/ssh2)
+
 #### port
 Port used to connect to the remote server.
 
@@ -147,10 +157,14 @@ Username used to connect to the remote server.
 Password used to connect to the remote server.
 
 #### privateKeyFile
-Path to the privateKey file (see ssh2 documentation).
+For an encrypted private key, this is the passphrase used to decrypt it.
+
+Default: (null)
+
+
+#### passphrase
 
 Default: null
-
 
 #### mode
 'archive' : Deploy an archive and decompress it on the remote server.
@@ -233,8 +247,22 @@ List of paths (*glob* format) to **not** deploy. Paths must be relative to `loca
 Default : []
 
 #### share
-List of folders to "share" between releases. A symlink will be created for each item.
+List of folders to "share" between releases. A symlink will be created for each item.  
+Item can be either a string or an object (to specify the mode to set to the symlink target).
 
+```json
+{
+    ...
+    share: {
+        'images': 'assets/images',
+        'upload': {
+            symlink: 'app/upload',
+            mode:    '777' // Will chmod 777 shared/upload
+        }
+    }
+    ...
+}
+```
 Keys = Folder to share (relative to `sharedFolder`)
 
 Values = Symlink path  (relative to release folder)
