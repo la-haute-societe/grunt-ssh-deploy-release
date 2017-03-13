@@ -583,7 +583,7 @@ module.exports = function (grunt) {
 
             grunt.log.subhead('Synchronize remote server');
 
-            const source = options.localPath + '/*';
+            const source = options.localPath + '/';
             const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
             const copy = 'rsync -a ' + options.deployPath + '/' + options.synchronizedFolder + '/ ' + releasePath;
 
