@@ -4,20 +4,27 @@ module.exports = function (grunt) {
     grunt.registerTask('ssh-deploy-release', 'Begin Deployment', function () {
 
         // Dependencies
-        const path = require('path');
-        const fs = require('fs');
-        const done = this.async();
+        const path       = require('path');
+        const fs         = require('fs');
+        const done       = this.async();
         const Connection = require('ssh2');
-        const client = require('scp2');
-        const moment = require('moment');
-        const timestamp = moment().utc().format('YYYY-MM-DD-HH-mm-ss-SSS-UTC');
-        const async = require('async');
-        const extend = require('extend');
-        const filesize = require('filesize');
-        const exec = require('child_process').exec;
+        const client     = require('scp2');
+        const moment     = require('moment');
+        const timestamp  = moment().utc().format('YYYY-MM-DD-HH-mm-ss-SSS-UTC');
+        const async      = require('async');
+        const extend     = require('extend');
+        const filesize   = require('filesize');
+        const exec       = require('child_process').exec;
+        const chalk      = require('chalk');
+        const ora        = require('ora');
+        const os = require('os');
+
 
         // Default options
         var defaultOptions = {
+
+            debug: false,
+
             // Deployment mode ('archive' or 'synchronize')
             mode: 'archive',
             archiveName: 'release.tar.gz',
@@ -30,7 +37,7 @@ module.exports = function (grunt) {
                     level: 5
                 }
             },
-            deleteLocalArchiveAfterDeployment : true,
+            deleteLocalArchiveAfterDeployment: true,
 
             // SSH / SCP connection
             port: 22,
@@ -93,12 +100,12 @@ module.exports = function (grunt) {
                 return [];
             },
         };
-        var task = this;
-        var options = getConfiguration();
-        var releaseTag = getReleaseTag();
-        var releasePath = getReleasePath();
-        var connection = null;
-        var deployer = {
+        var task           = this;
+        var options        = getConfiguration();
+        var releaseTag     = getReleaseTag();
+        var releasePath    = getReleasePath();
+        var connection     = null;
+        var deployer       = {
             options: options,
             releaseTag: releaseTag,
             releasePath: releasePath,
@@ -120,7 +127,7 @@ module.exports = function (grunt) {
                 options.privateKey = grunt.file.read(options.privateKeyFile);
             }
 
-            if(grunt.option('remove')) {
+            if (grunt.option('remove')) {
                 removeRelease();
             }
             else {
@@ -133,8 +140,8 @@ module.exports = function (grunt) {
          */
         function removeRelease() {
 
-            if( ! options.allowRemove) {
-                grunt.fail.fatal('Remove release is not allowed. (check "allowRemove" option)');
+            if (!options.allowRemove) {
+                logFatal('Remove release is not allowed. (check "allowRemove" option)');
                 return;
             }
 
@@ -190,7 +197,7 @@ module.exports = function (grunt) {
             );
 
             // Fix : "writeable" is an alias of "writable"
-            if(options.writeable) {
+            if (options.writeable) {
                 options.writable = options.writeable;
             }
 
@@ -220,19 +227,21 @@ module.exports = function (grunt) {
             }
 
             // Password authentication
-            else if (options.password) {
-                scpOptions.password = options.password;
-            }
-
-            // Agent authentication
-            else if (options.agent) {
-                    scpOptions.agent = options.agent;
+            else
+                if (options.password) {
+                    scpOptions.password = options.password;
                 }
 
-                // No authentication
-                else {
-                    throw new Error('Agent, password or private key required for secure copy.');
-                }
+                // Agent authentication
+                else
+                    if (options.agent) {
+                        scpOptions.agent = options.agent;
+                    }
+
+                    // No authentication
+                    else {
+                        throw new Error('Agent, password or private key required for secure copy.');
+                    }
 
             return scpOptions;
         }
@@ -274,22 +283,22 @@ module.exports = function (grunt) {
         function execRemote(cmd, showLog, next) {
             connection.exec(cmd, function (error, stream) {
                 if (error) {
-                    grunt.log.errorlns(error);
-                    grunt.log.error('Error while deploying..');
+                    logError('Error while deploying..');
+                    logError(error);
                     deleteRemoteRelease(closeConnectionTask);
                 }
 
                 stream.on('data', function (data, extended) {
-                    if(showLog) {
-                        grunt.log.write((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
+                    if (showLog) {
+                        log((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
                         return;
                     }
 
-                    grunt.log.debug((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
+                    logDebug((extended === 'stderr' ? 'STDERR: ' : 'STDOUT: ') + data);
                 });
 
                 stream.on('end', function () {
-                    grunt.log.debug('Remote command : ' + cmd);
+                    logDebug('Remote command : ' + cmd);
                     if (!error) {
                         next();
                     }
@@ -312,9 +321,9 @@ module.exports = function (grunt) {
          */
         function deleteRemoteRelease(callback) {
             var command = 'rm -rf ' + releasePath;
-            grunt.log.subhead('Delete release on remote');
+            logSubhead('Delete release on remote');
             execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -356,11 +365,11 @@ module.exports = function (grunt) {
          * @param path
          * @returns {string}
          */
-        function realpath (path) {
+        function realpath(path) {
             var arr = [] // Save the root, if not given
 
             // Explode the given path into it's parts
-            arr = path.split('/') // The path is an array now
+            arr  = path.split('/') // The path is an array now
             path = [] // Foreach part make a check
             for (var k in arr) { // This is'nt really interesting
                 if (arr[k] === '.') {
@@ -394,7 +403,7 @@ module.exports = function (grunt) {
          * @param callback
          */
         function businessCallbackExecute(commandsFunction, callback) {
-            if( ! commandsFunction) {
+            if (!commandsFunction) {
                 callback();
                 return;
             }
@@ -402,22 +411,22 @@ module.exports = function (grunt) {
             let commands = commandsFunction;
 
             // If commandsFunction is a function, take its result as commands
-            if(typeof commandsFunction === 'function'){
+            if (typeof commandsFunction === 'function') {
                 commands = commandsFunction(deployer);
             }
 
             // Nothing to execute
-            if(!commands || commands.length == 0) {
+            if (!commands || commands.length == 0) {
                 callback();
                 return;
             }
 
             // Execute each command
             async.eachSeries(commands, (command, innerCallback) => {
-                grunt.log.subhead('Execute on remote : ' + command);
+                logSubhead('Execute on remote : ' + command);
                 deployer.execRemote(command, true, innerCallback);
             }, () => {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -458,24 +467,27 @@ module.exports = function (grunt) {
          */
         function compressReleaseTask(callback) {
 
-            if(options.mode != 'archive') {
+            if (options.mode != 'archive') {
                 callback();
                 return;
             }
 
-            grunt.log.subhead('Compress release');
+            logSubhead('Compress release');
+            let spinner = ora('Compressing').start();
 
             var archiver = require('archiver');
-            var output = fs.createWriteStream(options.archiveName);
-            var archive = archiver(options.archiveType, options.gzip);
+            var output   = fs.createWriteStream(options.archiveName);
+            var archive  = archiver(options.archiveType, options.gzip);
 
             output.on('close', function () {
-                grunt.log.ok('Archive created : ' + filesize(archive.pointer()));
+                spinner.stop();
+                logOk('Archive created : ' + filesize(archive.pointer()));
                 callback();
             });
 
             archive.on('error', function (err) {
-                grunt.log.error('Error while compressing');
+                spinner.stop();
+                logError('Error while compressing');
                 throw err;
             });
 
@@ -494,29 +506,29 @@ module.exports = function (grunt) {
          * Connect to remote
          */
         function connectToRemoteTask(callback) {
-            grunt.log.subhead('Connect to ' + options.host);
+            logSubhead('Connect to ' + options.host);
+            let spinner = ora('Connecting').start();
 
             connection = new Connection();
 
             // Ready event
             connection.on('ready', function () {
-                grunt.log.ok('Connected');
+                spinner.stop();
+                logOk('Connected');
                 callback();
             });
 
             // Error event
             connection.on('error', function (error) {
-                grunt.log.error("Error : " + options.host);
-                console.log(error, connection);
-                grunt.log.errorlns(error);
+                spinner.stop();
                 if (error) {
-                    throw error;
+                    logFatal(error);
                 }
             });
 
             // Close event
             connection.on('close', function (hadError) {
-                grunt.log.subhead("Closed from " + options.host);
+                logSubhead("Closed from " + options.host);
                 return true;
             });
 
@@ -533,11 +545,11 @@ module.exports = function (grunt) {
         function createReleaseFolderOnRemoteTask(callback) {
             var command = 'mkdir -p ' + releasePath;
 
-            grunt.log.subhead('Create release folder on remote');
-            grunt.log.writeln(' - ' + releasePath);
+            logSubhead('Create release folder on remote');
+            log(' - ' + releasePath);
 
             execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -548,23 +560,27 @@ module.exports = function (grunt) {
          */
         function uploadArchiveTask(callback) {
 
-            if(options.mode != 'archive') {
+            if (options.mode != 'archive') {
                 callback();
                 return;
             }
 
             var build = options.archiveName;
 
-            grunt.log.subhead('Upload archive to remote');
+            logSubhead('Upload archive to remote');
+            let spinner = ora('Uploading').start();
+
             client.scp(build, {
                 path: releasePath
             }, function (error) {
+                spinner.stop();
+
                 if (error) {
-                    grunt.log.errorlns(error);
+                    logError(error);
                     return;
                 }
 
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -576,46 +592,59 @@ module.exports = function (grunt) {
          */
         function uploadReleaseTask(callback) {
 
-            if(options.mode != 'synchronize') {
+            if (options.mode != 'synchronize') {
                 callback();
                 return;
             }
 
-            grunt.log.subhead('Synchronize remote server');
+            logSubhead('Synchronize remote server');
+            const spinner = ora('Synchronizing').start();
 
             const source = options.localPath + '/';
             const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
-            const copy = 'rsync -a ' + options.deployPath + '/' + options.synchronizedFolder + '/ ' + releasePath;
+            const copy   = 'rsync -a ' + options.deployPath + '/' + options.synchronizedFolder + '/ ' + releasePath;
 
             // Construct rsync command
             let sshpass = '';
 
             // Use password
-            if(options.password != '') {
-                sshpass = '--rsh=\'sshpass -p "' + options.password  + '" ssh -l ' + options.username + ' -o StrictHostKeyChecking=no\'';
+            if (options.password != '') {
+                sshpass = '--rsh=\'sshpass -p "' + options.password + '" ssh -l ' + options.username + ' -o StrictHostKeyChecking=no\'';
             }
 
             // Use privateKey
-            else if(options.privateKeyFile != null) {
-                grunt.fail.fatal('PrivateKey not compatible with synchronize mode.');
-            }
+            else
+                if (options.privateKeyFile != null) {
+                    logFatal('PrivateKey not compatible with synchronize mode.');
+                }
 
             // Concat
             let synchronizeCommand = 'rsync ' + sshpass + ' ' + options.rsyncOptions + ' -a --stats --delete ' + source + ' ' + target;
 
             // Exec !
-            exec(synchronizeCommand, function(error, stdout, stderr) {
-                if(error) {
-                    grunt.fail.fatal(error);
-                }
-                grunt.log.write(stdout);
-                grunt.log.write(stderr);
-                grunt.log.ok('Done');
+            exec(synchronizeCommand, function (error, stdout, stderr) {
+                spinner.stop();
 
-                grunt.log.subhead('Copy release');
+                if (error) {
+                    logFatal(error);
+                }
+
+                if(stderr) {
+                    log(stdout);
+                }
+
+                if(stderr) {
+                    log(stderr);
+                }
+
+                logOk('Done');
+
+                logSubhead('Copy release');
+                const spinnerCopy = ora('Copying').start();
 
                 execRemote(copy, true, function (result) {
-                    grunt.log.ok('Done');
+                    spinnerCopy.stop();
+                    logOk('Done');
                     callback();
                 });
             });
@@ -629,7 +658,7 @@ module.exports = function (grunt) {
          */
         function decompressArchiveOnRemoteTask(callback) {
 
-            if(options.mode != 'archive') {
+            if (options.mode != 'archive') {
                 callback();
                 return;
             }
@@ -640,18 +669,21 @@ module.exports = function (grunt) {
             };
 
             // Check archiveType is supported
-            if( ! untarMap[options.archiveType]) {
-                grunt.fail.fatal(options.archiveType + ' not supported.');
+            if (!untarMap[options.archiveType]) {
+                logFatal(options.archiveType + ' not supported.');
             }
 
             var goToCurrent = "cd " + releasePath;
-            var untar = untarMap[options.archiveType];
-            var cleanup = "rm " + path.posix.join(releasePath, options.archiveName);
-            var command = goToCurrent + " && " + untar + " && " + cleanup;
+            var untar       = untarMap[options.archiveType];
+            var cleanup     = "rm " + path.posix.join(releasePath, options.archiveName);
+            var command     = goToCurrent + " && " + untar + " && " + cleanup;
 
-            grunt.log.subhead('Decompress archive on remote');
+            logSubhead('Decompress archive on remote');
+            let spinner = ora('Decompressing').start();
+
             execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
+                spinner.stop();
+                logOk('Done');
                 callback();
             });
         }
@@ -682,7 +714,7 @@ module.exports = function (grunt) {
          */
         function updateSharedSymbolicLinkOnRemoteTask(callback) {
 
-            grunt.log.subhead('Update shared symlink on remote');
+            logSubhead('Update shared symlink on remote');
 
             async.eachSeries(Object.keys(options.share), function (currentSharedFolder, itemCallback) {
                 const configValue = options.share[currentSharedFolder];
@@ -703,25 +735,25 @@ module.exports = function (grunt) {
                     mode = configValue.mode;
                 }
 
-                const linkPath = releasePath + '/' + symlinkName;
+                const linkPath   = releasePath + '/' + symlinkName;
                 const upwardPath = getReversePath(symlinkName);
-                const target = upwardPath + '/../' + options.sharedFolder + '/' + currentSharedFolder;
+                const target     = upwardPath + '/../' + options.sharedFolder + '/' + currentSharedFolder;
 
-                grunt.log.writeln(' - ' + symlinkName + ' ==> ' + currentSharedFolder);
+                log(' - ' + symlinkName + ' ==> ' + currentSharedFolder);
                 createSymboliclink(target, linkPath, () => {
                     if (!mode) {
                         itemCallback();
                         return;
                     }
 
-                    grunt.log.writeln('   chmod ' + mode);
+                    log('   chmod ' + mode);
 
                     remoteChmod(linkPath, mode, () => {
                         itemCallback();
                     });
                 });
             }, () => {
-                grunt.log.ok('Done');
+                logOk('Done');
 
                 callback();
             });
@@ -739,18 +771,18 @@ module.exports = function (grunt) {
                 return;
             }
 
-            grunt.log.subhead('Create folders on remote');
+            logSubhead('Create folders on remote');
 
             async.eachSeries(options.create, function (currentFolderToCreate, itemCallback) {
-                var path = releasePath + '/' + currentFolderToCreate;
+                var path    = releasePath + '/' + currentFolderToCreate;
                 var command = 'mkdir ' + path + ' && chmod ugo+w ' + path;
 
-                grunt.log.writeln(' - ' + currentFolderToCreate);
+                log(' - ' + currentFolderToCreate);
                 execRemote(command, options.debug, function () {
                     itemCallback();
                 });
             }, () => {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -766,18 +798,18 @@ module.exports = function (grunt) {
                 return;
             }
 
-            grunt.log.subhead('Make folders writable on remote');
+            logSubhead('Make folders writable on remote');
 
             async.eachSeries(options.makeWritable, function (currentFolderToMakeWritable, itemCallback) {
                 const path = releasePath + '/' + currentFolderToMakeWritable;
                 const mode = 'ugo+w';
 
-                grunt.log.writeln(' - ' + currentFolderToMakeWritable);
+                log(' - ' + currentFolderToMakeWritable);
                 remoteChmod(path, mode, () => {
                     itemCallback();
                 });
             }, () => {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -792,15 +824,15 @@ module.exports = function (grunt) {
                 return;
             }
 
-            grunt.log.subhead('Make files executables on remote');
+            logSubhead('Make files executables on remote');
 
             async.eachSeries(options.makeExecutable, function (currentFileToMakeExecutable, itemCallback) {
-                var path = releasePath + '/' + currentFileToMakeExecutable;
+                var path    = releasePath + '/' + currentFileToMakeExecutable;
                 var command = 'chmod ugo+x ' + path;
 
-                grunt.log.writeln(' - ' + currentFileToMakeExecutable);
+                log(' - ' + currentFileToMakeExecutable);
                 execRemote(command, options.debug, function () {
-                    grunt.log.ok('Done');
+                    logOk('Done');
                     itemCallback();
                 });
             }, callback);
@@ -813,12 +845,12 @@ module.exports = function (grunt) {
          */
         function updateCurrentSymbolicLinkOnRemoteTask(callback) {
 
-            grunt.log.subhead('Update current release symlink on remote');
+            logSubhead('Update current release symlink on remote');
 
-            var target = options.releasesFolder + '/' +releaseTag;
+            var target = options.releasesFolder + '/' + releaseTag;
 
             createSymboliclink(target, getCurrentPath(), function () {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
@@ -865,9 +897,12 @@ module.exports = function (grunt) {
                     options.releasesFolder
                 ) + " | awk 'NR>" + options.releasesToKeep + "'`";
 
-            grunt.log.subhead('Remove old builds on remote');
+            logSubhead('Remove old builds on remote');
+            let spinner = ora('Removing').start();
+
             execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
+                spinner.stop();
+                logOk('Done');
                 callback();
             });
         }
@@ -879,14 +914,14 @@ module.exports = function (grunt) {
          */
         function deleteLocalArchiveTask(callback) {
 
-            if(options.mode != 'archive' || ! options.deleteLocalArchiveAfterDeployment) {
+            if (options.mode != 'archive' || !options.deleteLocalArchiveAfterDeployment) {
                 callback();
                 return;
             }
 
-            grunt.log.subhead('Delete local archive');
+            logSubhead('Delete local archive');
             fs.unlink(options.archiveName);
-            grunt.log.ok('Done');
+            logOk('Done');
             callback();
         }
 
@@ -897,7 +932,7 @@ module.exports = function (grunt) {
             connection.end();
             client.close();
             client.__sftp = null;
-            client.__ssh = null;
+            client.__ssh  = null;
             callback();
         }
 
@@ -906,14 +941,69 @@ module.exports = function (grunt) {
          * Remove release on remote
          * @param callback
          */
-        function removeReleaseTask(callback){
-            grunt.log.subhead('Remove releases on remote');
+        function removeReleaseTask(callback) {
+            logSubhead('Remove releases on remote');
 
             var command = "rm -rf " + options.deployPath;
             execRemote(command, options.debug, function () {
-                grunt.log.ok('Done');
+                logOk('Done');
                 callback();
             });
         }
+
+        /**
+         * Log fatal error and exit process
+         * @param message
+         */
+        function logFatal(message) {
+            console.log('\n', chalk.red.bold('Fatal error : ' + message));
+            process.exit();
+        }
+
+        /**
+         * Log subhead
+         * @param message
+         */
+        function logSubhead(message) {
+            console.log(os.EOL + chalk.bold.underline(message));
+        }
+
+        /**
+         * Log "ok" message
+         * @param message
+         */
+        function logOk(message) {
+            console.log(chalk.green(message));
+        }
+
+
+        /**
+         * Log error message
+         * @param message
+         */
+        function logError(message) {
+            console.log(chalk.red(message));
+        }
+
+        /**
+         * Log only if options.debug is enabled
+         * @param message
+         */
+        function logDebug(message) {
+            if (!options.debug) {
+                return;
+            }
+
+            console.log(os.EOL + chalk.cyan(message));
+        }
+
+        /**
+         * Simple log
+         * @param message
+         */
+        function log(message) {
+            console.log(message);
+        }
+
     });
 };
