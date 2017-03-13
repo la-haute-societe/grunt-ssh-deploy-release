@@ -605,10 +605,11 @@ module.exports = function (grunt) {
 
             // Exec !
             exec(synchronizeCommand, function(error, stdout, stderr) {
-                if(stderr) {
-                    grunt.fail.fatal(stderr);
+                if(error) {
+                    grunt.fail.fatal(error);
                 }
                 grunt.log.write(stdout);
+                grunt.log.write(stderr);
                 grunt.log.ok('Done');
 
                 grunt.log.subhead('Copy release');
