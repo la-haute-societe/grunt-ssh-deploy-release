@@ -251,6 +251,8 @@ Default : Use current timestamp.
 #### exclude
 List of paths (*glob* format) to **not** deploy. Paths must be relative to `localPath`.
 
+Not working with `mode: 'synchronize'`, use `rsyncOptions` instead.
+
 Default : []
 
 #### share
