@@ -47,6 +47,7 @@ module.exports = function (grunt) {
             localPath: 'www',
             deployPath: '',
             synchronizedFolder: 'synchronized',
+            rsyncOptions: '',
 
             // Release
             releasesToKeep: '3',
@@ -584,15 +585,14 @@ module.exports = function (grunt) {
 
             const source = options.localPath + '/*';
             const target = options.username + '@' + options.host + ':' + options.deployPath + '/' + options.synchronizedFolder;
-            const copy = 'rsync -ravh ' + options.deployPath + '/' + options.synchronizedFolder + '/* ' + releasePath;
+            const copy = 'rsync -a ' + options.deployPath + '/' + options.synchronizedFolder + '/ ' + releasePath;
 
             // Construct rsync command
-            let synchronizeCommand = '';
             let sshpass = '';
 
             // Use password
             if(options.password != '') {
-                sshpass = 'sshpass -p \'' + options.password + '\' ';
+                sshpass = '--rsh=\'sshpass -p "' + options.password  + '" ssh -l ' + options.username + ' -o StrictHostKeyChecking=no\'';
             }
 
             // Use privateKey
@@ -601,7 +601,7 @@ module.exports = function (grunt) {
             }
 
             // Concat
-            synchronizeCommand = sshpass + 'rsync -r -a -v --delete-after -e "ssh -o StrictHostKeyChecking=no" ' + source + ' ' + target
+            let synchronizeCommand = 'rsync ' + sshpass + ' ' + options.rsyncOptions + ' -a --stats --delete ' + source + ' ' + target;
 
             // Exec !
             exec(synchronizeCommand, function(error, stdout, stderr) {

@@ -30,7 +30,6 @@ Clean temporary files and old releases.
 ```
 
 
-## TOC
 - [Installation](#installation)
 - [Grunt configuration](#grunt-configuration)
 - [Execute](#execute)
@@ -228,6 +227,14 @@ Used when `mode` is 'synchronize'.
 
 Default : 'www'
 
+#### rsyncOptions
+Additional options for rsync process. 
+
+Default : ''
+
+```js
+rsyncOptions : '--exclude-from="exclude.txt" --delete-excluded'
+```
 
 ### Releases
 
