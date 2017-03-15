@@ -125,4 +125,4 @@ grunt ssh-deploy-release:environmentName --debug
 
 `grunt-ssh-deploy-release` use `ssh-deploy-release` package.
 
-See available options on https://github.com/la-haute-societe/grunt-ssh-deploy-release 
+See available options on https://github.com/la-haute-societe/ssh-deploy-release 
