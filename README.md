@@ -25,7 +25,8 @@ Deploy releases over SSH with rsync or gzip archive.
 - [Execute](#execute)
 - [Options](#options)
 - [Examples](#examples)
-- [Known issues](#known-issues)
+
+
 
 
 ## Installation
@@ -111,14 +112,11 @@ grunt ssh-deploy-release:environmentName
 ```
 grunt ssh-deploy-release:environmentName --remove
 ```
-See `allowRemove` option.
+See `allowRemove` option on ssh-deploy-release.
 
 
 ### Enable debug
-Use `--debug` option :
-```
-grunt ssh-deploy-release:environmentName --debug
-```
+Set ``debug`` option to `true` 
 
 
 ## Options
