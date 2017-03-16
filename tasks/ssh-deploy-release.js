@@ -18,10 +18,10 @@ module.exports = function (grunt) {
 
         // Action
         if (grunt.option('remove')) {
-            deployer.removeRelease();
+            deployer.removeRelease(done);
         }
         else {
-            deployer.deployRelease();
+            deployer.deployRelease(done);
         }
 
     });
