@@ -5,7 +5,7 @@ module.exports = function (grunt) {
 
         const done     = this.async();
         const extend   = require('extend');
-        const deployer = require('ssh-deploy-release');
+        const Deployer = require('ssh-deploy-release');
 
         // Merge options
         var options = extend(
@@ -14,12 +14,14 @@ module.exports = function (grunt) {
             grunt.config.get('ssh-deploy-release')[this.args]['options']
         );
 
+        const deployer = new Deployer(options);
+
         // Action
         if (grunt.option('remove')) {
-            deployer.removeRelease(options, () => done());
+            deployer.removeRelease();
         }
         else {
-            deployer.deployRelease(options, () => done());
+            deployer.deployRelease();
         }
 
     });
