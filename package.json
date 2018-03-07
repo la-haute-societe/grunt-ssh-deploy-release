@@ -1,5 +1,5 @@
 {
-	"version": "1.16.3",
+	"version": "1.16.4",
 	"name": "grunt-ssh-deploy-release",
 	"description": "Grunt plugin for deploying release on remote server over ssh.",
 	"author": "La Haute Société (http://www.lahautesociete.com)",
@@ -8,6 +8,6 @@
 	"main": "tasks/ssh-deploy-release.js",
 	"dependencies": {
 		"extend": "^3.0.0",
-		"ssh-deploy-release": "^2.0.0"
+		"ssh-deploy-release": "^2.1.6"
 	}
 }
